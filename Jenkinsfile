@@ -30,7 +30,7 @@ pipeline {
     }
     stage('Deploy') {
       steps {
-        sh 'pm2 stop onote-api-dev'
+        sh 'pm2 stop onote-api-dev || true'
         sh 'pm2 start js/index.js --name "onote-api-dev"'
       }
     }
