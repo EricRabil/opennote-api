@@ -26,16 +26,16 @@ const generateSecret = () => crypto.randomBytes(64).toString('hex');
 
 export const CONFIG: Configuration = {
   google: {
-    clientID: "",
-    clientSecret: "",
-    callbackURL: "",
+    clientID: process.env.GOOGLE_ID || "",
+    clientSecret: process.env.GOOGLE_SECRET || "",
+    callbackURL: process.env.GOOGLE_CALLBACK || "",
     ...(localConfig.google || {})
   },
-  frontendURL: localConfig.frontendURL || "http://localhost:8080",
-  sessionSecret: localConfig.sessionSecret || generateSecret(),
-  storage: localConfig.storage || "/usr/local/var/onapi",
-  jwtSecret: localConfig.jwtSecret || generateSecret(),
-  jwtExpirySeconds: isNaN(localConfig.jwtExpirySeconds) ? 300 : localConfig.jwtExpirySeconds
+  frontendURL: process.env.FRONTEND_URL || localConfig.frontendURL || "http://localhost:8080",
+  sessionSecret: process.env.SESSION_SECRET || localConfig.sessionSecret || generateSecret(),
+  storage: process.env.STORAGE || localConfig.storage || "/usr/local/var/onapi",
+  jwtSecret: process.env.JWT_SECRET || localConfig.jwtSecret || generateSecret(),
+  jwtExpirySeconds: parseInt(process.env.JWT_EXPIRY!) || (isNaN(localConfig.jwtExpirySeconds) ? 60000 : localConfig.jwtExpirySeconds)
 }
 
 fs.writeJSONSync(CONFIG_PATH, CONFIG, { spaces: 4 });
