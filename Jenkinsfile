@@ -32,7 +32,7 @@ pipeline {
       steps {
         load "/usr/share/jenkins/jenkins.groovy"
         sh 'pm2 stop onote-api-dev || true'
-        sh 'GOOGLE_ID=${env.GOOGLE_ID} GOOGLE_SECRET=${env.GOOGLE_SECRET} GOOGLE_CALLBACK=${env.GOOGLE_CALLBACK} FRONTEND_URL=${env.FRONTEND_URL} STORAGE=${env.STORAGE} pm2 start js/index.js --name "onote-api-dev"'
+        sh "GOOGLE_ID=${env.GOOGLE_ID} GOOGLE_SECRET=${env.GOOGLE_SECRET} GOOGLE_CALLBACK=${env.GOOGLE_CALLBACK} FRONTEND_URL=${env.FRONTEND_URL} STORAGE=${env.STORAGE} pm2 start js/index.js --name \"onote-api-dev\""
       }
     }
     stage('Artifacts') {
