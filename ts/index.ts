@@ -1,71 +1,54 @@
 const cors = require("cors");
 import express, { Router } from "express";
-import { PORT } from "./Constants";
+import { WebSocket } from "@clusterws/cws";
+import { Server } from "http";
+import morgan from "morgan";
+import { PORT, CONFIG } from "./Constants";
 import fetchMetadata from "url-metadata";
+import { dbConnect, doPassport } from "./util";
+import session from "express-session";
+import bodyParser from "body-parser";
+import passport from "passport";
+import { UserSocketCluster } from "./sockets/UserSocketCluster";
+import { User } from "./entity/User";
+import { SocketSupervisor } from "./sockets/SocketSupervisor";
 
 const corsOptions = {
   origin: function (origin: string, callback: (e: any, allowed?: boolean) => any) {
     callback(null, true);
-  }
-}
-
-function addhttp(url: string) {
-  if (!/^(?:f|ht)tps?\:\/\//.test(url)) {
-      url = "http://" + url;
-  }
-  return url;
+  },
+  credentials: true
 }
 
 const app = express();
+app.use(morgan('tiny'));
 app.use(cors(corsOptions));
 
-const API = Router();
+app.use(session({ secret: CONFIG.sessionSecret, resave: false, saveUninitialized: true }));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(passport.initialize());
+app.use(passport.session());
 
-API.get('/link/metadata', async function(req, res, next) {
-  let { url } = req.query;
+doPassport(passport, app);
 
-  if (!url) {
-    return res.status(400).json({ success: 0, reason: { message: "Please provide a URL for the metadata query", code: "ERR_NO_URL" }})
-  }
+app.use('/api/v1', require("./api/v1"));
 
-  url = addhttp(url);
+async function main() {
+  await dbConnect();
+  console.log('Did connect to DB');
 
-  console.debug(`Fetching metadata for URL`, { url });
-
-  const metadata = await fetchMetadata(url).catch(e => {
-    console.error('Failed to load metadata for URL', e);
-    return {
-      title: null,
-      description: null,
-      image: null,
-      "og:image": null,
-      source: null
-    }
+  const server: Server = await new Promise(resolve => {
+    let server: Server = app.listen(PORT, () => resolve(server));
   });
 
-  if (metadata.source === null) {
-    return res.status(400).json({ success: 0 });
-  }
+  const socketServer = new WebSocket.Server({ server });
+  const supervisor = SocketSupervisor.sharedInstance();
+  socketServer.on('connection', socket => {
+    supervisor.connect(socket);
+  });
 
-  const { title, description, image, "og:image": ogImage, source } = metadata;
-  let imageURL = image || ogImage;
-  if (imageURL && imageURL.startsWith('/')) {
-    console.debug(`Prefixing relative image path with URL`, metadata);
-    imageURL = addhttp(`${metadata.source}${imageURL}`);
-  }
+  console.log(`OpenNote API is running on :${PORT}`)
+}
 
-  res.json({
-    success: 1,
-    meta: {
-      title,
-      description,
-      image: {
-        url: imageURL
-      }
-    }
-  })
-});
-
-app.use('/api/v1', API);
-
-app.listen(PORT, () => console.log(`OpenNote API is running on :${PORT}`));
+main();
