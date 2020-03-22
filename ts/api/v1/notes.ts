@@ -1,4 +1,4 @@
-import { RouteGroup, Get, RespondsWithJSON, UnknownArtifact, Post, DoesNeedLogin, Patch, ForbiddenAction, SupportsWS } from "../../route.kit";
+import { RouteGroup, Get, RespondsWithJSON, UnknownArtifact, Post, DoesNeedLogin, Patch, ForbiddenAction, SupportsWS, Delete } from "../../route.kit";
 import { Request, Response } from "express";
 import { Note } from "../../entity/Note";
 import { User as ONoteUser } from "../../entity/User";
@@ -80,5 +80,29 @@ export class NotesAPI_V1 {
     const { json } = await note.save();
 
     return json;
+  }
+
+  @Delete('/:id', RespondsWithJSON, DoesNeedLogin, SupportsWS)
+  async deleteNote({ user, params: { id }}: Request) {
+    var note: Note | undefined;
+    try {
+      note = await Note.findOne({
+        [id.match(UUID_REGEX) ? "id" : "shortCode"]: id
+      });
+    } finally {
+      if (!note) {
+        return UnknownArtifact('note');
+      }
+    }
+
+    if (note.authorId !== user!.id) {
+      return ForbiddenAction();
+    }
+
+    await note.remove();
+
+    return {
+      id
+    };
   }
 }
