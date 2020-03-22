@@ -42,7 +42,7 @@ async function main() {
     let server: Server = app.listen(PORT, () => resolve(server));
   });
 
-  const socketServer = new WebSocket.Server({ server });
+  const socketServer = new WebSocket.Server({ server, path: '/socket' });
   const supervisor = SocketSupervisor.sharedInstance();
   socketServer.on('connection', socket => {
     supervisor.connect(socket);
