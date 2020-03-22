@@ -16,7 +16,6 @@ export class Note extends ONEntity {
   id: string;
 
   @Column("simple-json")
-  @Reactive()
   data: any;
 
   @Column()
