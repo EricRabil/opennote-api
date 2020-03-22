@@ -184,6 +184,18 @@ export class UserSocketCluster extends EventEmitter {
         }
         cluster.disconnect(this);
         return;
+      case "/note/crud":
+        if (!payload.data || !payload.data.note || !payload.data.packet) {
+          onSocket.close(400, 'Malformed payload.');
+          return;
+        }
+        cluster = await SocketSupervisor.sharedInstance().clusterForNote(payload.data.note);
+        if (!cluster) {
+          // die
+          return;
+        }
+        cluster.dispatchCRUD(payload.data.packet, [onSocket]);
+        return;
     }
 
     const request = createRequestForMessage(payload, onSocket, this);
@@ -214,7 +226,7 @@ export class UserSocketCluster extends EventEmitter {
     }
   }
 
-  send(payload: Payload) {
+  send(payload: Payload, excluding: SocketWrapper[] = []) {
     if (!isPayload(payload)) {
       // use sendRaw to send custom payloads. sorry. fuck you.
       console.warn('Invalid payload blocked from sending to client.');
@@ -223,7 +235,7 @@ export class UserSocketCluster extends EventEmitter {
     return this.sendRaw(JSON.stringify(payload));
   }
 
-  sendRaw(payload: string): Promise<void> {
-    return Promise.all(this.sockets.map(sock => sock.sendRaw(payload))) as any;
+  sendRaw(payload: string, excluding: SocketWrapper[] = []): Promise<void> {
+    return Promise.all(this.sockets.filter(sock => !excluding.includes(sock)).map(sock => sock.sendRaw(payload))) as any;
   }
 }

@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import { Note } from "../entity/Note";
 import { UserSocketCluster, Payload, isPayload } from "./UserSocketCluster";
+import { SocketWrapper } from "./SocketWrapper";
 
 export class NoteSocketCluster extends EventEmitter {
   public readonly clusters: UserSocketCluster[] = [];
@@ -40,17 +41,26 @@ export class NoteSocketCluster extends EventEmitter {
     });
   }
 
-  send(payload: Payload) {
+  send(payload: Payload, excluding: SocketWrapper[] = []) {
     if (!isPayload(payload)) {
       // use sendRaw to send custom payloads. sorry. fuck you.
       console.warn('Invalid payload blocked from sending to client.');
       return;
     }
-    return this.sendRaw(JSON.stringify(payload));
+    return this.sendRaw(JSON.stringify(payload), excluding);
   }
 
-  sendRaw(payload: string): Promise<void> {
-    console.log(this.clusters.map(c => c.sockets.map(c => c.socket)));
-    return Promise.all(this.clusters.map(cluster => cluster.sendRaw(payload))) as any;
+  sendRaw(payload: string, excluding: SocketWrapper[] = []): Promise<void> {
+    return Promise.all(this.clusters.map(cluster => cluster.sendRaw(payload, excluding))) as any;
+  }
+
+  dispatchCRUD(packet: any, excluding: SocketWrapper[] = []) {
+    return this.send({
+      action: "/note/crud",
+      data: {
+        note: this.note.id,
+        packet
+      }
+    }, excluding);
   }
 }
