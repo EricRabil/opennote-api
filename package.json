@@ -40,7 +40,7 @@
     "path-to-regexp": "^6.1.0",
     "pg": "^7.18.2",
     "reflect-metadata": "^0.1.13",
-    "typeorm": "^0.2.24",
+    "typeorm": "^0.2.25",
     "url-metadata": "^2.4.0"
   },
   "devDependencies": {
